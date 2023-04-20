@@ -1,11 +1,15 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
+const nodemailer = require('nodemailer');
+
 const UserModel = require("./models/User.js");
 const LocationModel = require("./models/location.js");
 // const Signup = require("./models/SignupCustomer.js");
-const SignupCustomer = require("./models/SignupCustomer.js");
+// const Customer = require("./models/SignupCustomer.js");
 const SignupAdmin = require("./models/SignupAdmin.js");
+const { Customer,Garage, Hospital } = require("./models/SignupCustomer.js");
+
 // const DocumentSchema = require("./models/Document.js");
 const cors = require('cors');
 const path = require('path');
@@ -33,40 +37,6 @@ const swaggerOptions = {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
-/**
- * @swagger
- * components:
- *   schemas:
- *     User:
- *       type: object
- *       properties:
- *         email:
- *           type: string
- *         password:
- *           type: string
- *       required:
- *         - email
- *         - password
- */
-
-/**
- * @swagger
- * /users:
- *   post:
- *     summary: Create a new user
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/User'
- *     responses:
- *       200:
- *         description: Created
- *       400:
- *         description: Bad request
- */
-
 app.post(
     '/users', 
     (req, res) => { 
@@ -78,23 +48,7 @@ app.post(
     }
 );
 
-/**
- * @swagger
- * /users:
- *   get:
- *     summary: Get all users
- *     responses:
- *       200:
- *         description: OK
- *       404:
- *         description: Not Found
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/User'
- */
+
 app.get(
     '/users', 
     async (req, res) => { 
@@ -103,84 +57,26 @@ app.get(
     }
 );
 
-/**
- * @swagger
- * components:
- *   schemas:
- *     SignupCustomer:
- *       type: object
- *       properties:
- *         name:
- *           type: string
- *           maxLength: 50
- *         email:
- *           type: string
- *           maxLength: 100
- *         password:
- *           type: string
- *           maxLength: 20
- *         phone:
- *           type: string
- *           maxLength: 10
- *         created_at:
- *           type: string
- *           format: date-time
- * 
- * /customers:
- *   post:
- *     summary: Create a new customer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/SignupCustomer'
- *     responses:
- *       200:
- *         description: Created
- *       500:
- *         description: Error creating customer
- */
-
-
-// Endpoint to create a new customer
 app.post('/customers', (req, res) => {
     const { name, email, password, phone } = req.body;
-    const customer = new SignupCustomer({ name, email, password, phone });
+    const customer = new Customer({ name, email, password, phone });
     customer.save();
     res.send(customer);
 });
 
-/**
- * @swagger
- * /customers:
- *   get:
- *     summary: Get all customers
- *     responses:
- *       200:
- *         description: OK
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/SignupCustomer'
- *       404:
- *         description: Not Found
- */
+
 app.get(
     '/customers', 
     async (req, res) => { 
-        const customer = await SignupCustomer.find(); // Fetch all user documents from the database
+        const customer = await Customer.find(); // Fetch all user documents from the database
         res.send(customer); // Send the array of user documents as response
     }
 );
 
 const multer = require('multer');
 const fs = require('fs');
-// const path = require('path');
 
-// Set storage engine
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, './uploads/');
@@ -215,24 +111,6 @@ app.post('/admins', upload.single('document'), (req, res) => {
 });
 
 
-
-/**
- * @swagger
-* /admins:
-*   get:
-*     summary: Get all admins
-*     responses:
-*       200:
-*         description: OK
-*         content:
-*           application/json:
-*             schema:
-*               type: array
-*               items:
-*                 $ref: '#/components/schemas/SignupAdmin'
-*       404:
-*         description: Not Found
-*/
 app.get(
     '/admins', 
     async (req, res) => { 
@@ -261,45 +139,7 @@ app.get('/admins/:id/document', async (req, res) => {
     res.send(data)
   });
 
-/**
- * @swagger
- * components:
- *   schemas:
- *     Location:
- *       type: object
- *       properties:
- *         name:
- *           type: string
- *         lat:
- *           type: number
- *         lng:
- *           type: number
- *         type:
- *           type: string
- *       required:
- *         - name
- *         - lat
- *         - lng
- *         - type
- */
 
-/**
- * @swagger
- * /api/locations:
- *   post:
- *     summary: Create a new location
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Location'
- *     responses:
- *       200:
- *         description: Created
- *       400:
- *         description: Bad request
- */
 
 app.post(
     '/api/locations', 
@@ -311,23 +151,7 @@ app.post(
 });
 
 
-/**
- * @swagger
- * /api/locations:
- *   get:
- *     summary: Get all locations
- *     responses:
- *       200:
- *         description: OK
- *       404:
- *         description: Not Found
-*         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Location'
- */
+
 app.get(
     '/api/locations', 
     async (req, res) => { 
@@ -360,6 +184,202 @@ app.get(
   }
 );
 
+app.post(
+  '/api/requests/garage', 
+   async(req, res) => {
+      const { email,service_type,location,vehicle_number, vehicle_make, vehicle_type,additional_details } = req.body;
+      // const customer_details = await Customer.find({_id:email})
+      // const admins = await SignupAdmin.find();
+      // const adminEmails = admins.map(SignupAdmin => SignupAdmin.email);
+
+      const Garag = new Garage({ email,service_type,location,vehicle_number, vehicle_make, vehicle_type,additional_details, status: 'pending' });
+      await Garag.save();
+      res.send(Garag);
+    });
+
+    app.get('/api/requests/garage', async (req, res) => {
+
+        const garageRequests = await Garage.find().populate('email');
+        res.json({ success: true, garageRequests });
+    });
+
+    app.get('/api/requests/garage/:requestId', async (req, res) => {
+
+      const garageRequests = await Garage.findById(requestId);
+      res.json({ success: true, garageRequests });
+  });
+
+
+    app.put('/api/requests/garage/:requestId', async (req, res) => {
+  const requestId = req.params.requestId;
+  const { status } = req.body;
+
+  const updatedGarageRequest = await Garage.findByIdAndUpdate(
+    requestId,
+    { $set: {status} },
+    { new: true }
+  );
+  
+  res.json({ success: true, updatedGarageRequest });
+});
+
+    app.delete('/api/requests/garage/:id', async (req, res) => {
+      try {
+        const requestId = req.params.id;
+    
+        await Garage.findByIdAndDelete(requestId);
+    
+        res.json({ success: true });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .json({ success: false, message: 'Error deleting request' });
+      }
+    });
+    
+    
+
+// app.get(
+//   '/api/requests/garage',
+//   async (req, res) => {
+//     const garag = await Garage.find();
+//     res.send(garag);
+//   }
+// );
+
+
+// app.post('/api/requests', async (req, res) => {
+//   try {
+
+//     if (req.body.service_type === 'Vehicle Towing Service') {
+//       const garageRequest = new Garage({ ...req.body, status: 'pending' });
+//       await garageRequest.save();
+//       res.json({ success: true, message: 'Request submitted successfully' });
+//     } else if (req.body.service_type === 'Hospital') {
+//       const hospitalRequest = new Hospital({ ...req.body, status: 'pending' });
+//       await hospitalRequest.save();
+//       res.json({ success: true, message: 'Request submitted successfully' });
+//     } else {
+//       res.json({ success: false, message: 'Invalid service type' });
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false, message: 'Error submitting request' });
+//   }
+// });
+
+
+// app.get('/api/requests/garage', async (req, res) => {
+//   try {
+//     // Retrieve all documents from both collections
+//     const garageRequests = await Garage.find().populate('email');
+//     // const hospitalRequests = await Hospital.find().populate('email');
+//     res.json({ success: true, garageRequests});
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false, message: 'Error retrieving requests' });
+//   }
+// });
+
+app.get('/api/requests/hospital', async (req, res) => {
+  try {
+    // Retrieve all documents from both collections
+    const hospitalRequests = await Hospital.find({ status: 'pending' }).populate('email');
+    // const hospitalRequests = await Hospital.find().populate('email');
+    res.json({ success: true, hospitalRequests});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Error retrieving requests' });
+  }
+});
+
+
+app.put('/api/requests/garage/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (status !== 'accepted' && status !== 'declined') {
+      return res.json({ success: false, message: 'Invalid status' });
+    }
+
+    const garageRequest = await Garage.findByIdAndUpdate(id, { status });
+    // const hospitalRequest = await Hospital.findByIdAndUpdate(id, { status });
+
+    if (!garageRequest) {
+      return res.json({ success: false, message: 'Request not found' });
+    }
+
+    res.json({ success: true, message: 'Request updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Error updating request' });
+  }
+});
+
+
+app.put('/api/requests/hospital/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (status !== 'accepted' && status !== 'declined') {
+      return res.json({ success: false, message: 'Invalid status' });
+    }
+
+    // const garageRequest = await Garage.findByIdAndUpdate(id, { status });
+    const hospitalRequest = await Hospital.findByIdAndUpdate(id, { status });
+
+    if (!hospitalRequest) {
+      return res.json({ success: false, message: 'Request not found' });
+    }
+
+    res.json({ success: true, message: 'Request updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Error updating request' });
+  }
+});
+
+// Create an endpoint for updating a request
+app.patch('/api/requests/:id', async (req, res) => {
+  try {
+    // Determine which collection to update based on the service type
+    if (req.body.service_type === 'Garage') {
+      const garageRequest = await Garage.findByIdAndUpdate(req.params.id, req.body);
+      res.json({ success: true, message: 'Request updated successfully', garageRequest });
+    } else if (req.body.service_type === 'Hospital') {
+      const hospitalRequest = await Hospital.findByIdAndUpdate(req.params.id, req.body);
+      res.json({ success: true, message: 'Request updated successfully', hospitalRequest });
+    } else {
+      res.json({ success: false, message: 'Invalid service type' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Error updating request' });
+  }
+});
+
+
+// Create an endpoint for deleting a request
+app.delete('/api/requests/:id', async (req, res) => {
+  try {
+    // Determine which collection to delete from based on the service type
+    if (req.query.service_type === 'Garage') {
+      const garageRequest = await Garage.findByIdAndDelete(req.params.id);
+      res.json({ success: true, message: 'Request deleted successfully', garageRequest });
+    } else if (req.query.service_type === 'Hospital') {
+      const hospitalRequest = await Hospital.findByIdAndDelete(req.params.id);
+      res.json({ success: true, message: 'Request deleted successfully', hospitalRequest });
+    } else {
+      res.json({ success: false, message: 'Invalid service type' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Error deleting request' });
+  }
+});
 
 app.listen(
     5000,

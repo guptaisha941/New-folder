@@ -35,7 +35,16 @@ const SignupAdminSchema = new Schema(
             data: Buffer,
             contentType: String,
             fileName: String
-        }
+        },
+        assigned_hospitals: [{
+            type: Schema.Types.ObjectId,
+            ref: 'Hospital',
+          }],
+        assigned_garage: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Garage',
+        }],
+
     })
 
 

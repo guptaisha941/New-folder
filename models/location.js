@@ -7,7 +7,8 @@ const locationSchema = new Schema({
     name: String,
     lat: Number,
     lng: Number,
-    type: String
+    type: String,
+    
   });
 
 module.exports = mongoose.model("Location", locationSchema);
